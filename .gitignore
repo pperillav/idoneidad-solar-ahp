@@ -1,0 +1,20 @@
+# Cachés y artefactos de Quarto / LaTeX
+/.quarto/
+*_files/
+/_site/
+*.aux
+*.log
+*.toc
+*.lof
+*.lot
+*.out
+*.xdv
+*.fls
+*.fdb_latexmk
+*.bbl
+*.bcf
+*.synctex.gz
+
+# Sistema
+.DS_Store
+Thumbs.db
