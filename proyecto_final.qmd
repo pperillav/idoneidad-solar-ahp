@@ -38,7 +38,7 @@ format:
     embed-resources: true
     smooth-scroll: true
   pdf:
-    documentclass: scrreprt
+    documentclass: scrartcl
     classoption: [titlepage]
     papersize: letter
     geometry:
@@ -567,22 +567,85 @@ ejecución produce un conjunto de capas intermedias y finales más los reportes
 
 ## Reproducibilidad, pruebas y publicación {#sec-publicacion}
 
-El complemento incluye pruebas unitarias puras (AHP, configuración y reportes) que se
-ejecutan sin necesidad de QGIS, lo que permite verificar la lógica de forma automatizada.
-El paquete se distribuye con licencia **GPL-3.0-or-later**, icono, `metadata.txt` con
-enlaces al repositorio y un conjunto de datos de muestra para una prueba rápida.
+La reproducibilidad del complemento se abordó desde tres niveles: reproducibilidad del
+código, reproducibilidad del flujo de geoprocesamiento y reproducibilidad de las salidas.
+En primer lugar, el código se estructuró modularmente, separando la interfaz gráfica, la
+validación de entradas, el cálculo AHP, las operaciones ráster, las operaciones
+vectoriales, la integración con ERA5 y la generación de reportes. Esta organización
+facilita la revisión técnica del complemento, permite aislar errores y favorece la
+incorporación de nuevas funcionalidades sin alterar la lógica central del modelo.
+
+En segundo lugar, el flujo de geoprocesamiento se implementó mediante algoritmos abiertos
+de QGIS, GDAL y proveedores nativos de `qgis:processing`. Esta decisión evita la
+dependencia de software propietario y permite que otros usuarios puedan reproducir,
+auditar o adaptar el procesamiento a partir de herramientas ampliamente disponibles
+dentro del ecosistema QGIS. Las operaciones de reproyección, remuestreo, cálculo de
+pendiente, orientación, álgebra de mapas, rasterización, vectorización y filtrado
+espacial quedan integradas en una cadena automatizada, lo que reduce la intervención
+manual y disminuye la posibilidad de errores operativos.
+
+En tercer lugar, el complemento genera salidas que permiten documentar cada ejecución.
+Además de los rásteres intermedios y la capa vectorial de polígonos viables, se generan
+reportes en formato HTML y CSV, junto con archivos auxiliares que registran los
+parámetros utilizados. Cuando se emplea ERA5, el archivo `00_era5_request.json`
+conserva la solicitud climática preparada, incluyendo la extensión geográfica, el
+periodo y los parámetros temporales seleccionados. Esto permite que el análisis pueda ser
+revisado posteriormente y que otro usuario pueda comprender bajo qué condiciones fue
+producido el resultado.
+
+Las pruebas realizadas incluyeron la instalación del complemento en un entorno QGIS, la
+carga de capas DEM y de cobertura del suelo, la selección de parámetros de aptitud, la
+validación de consistencia de la matriz AHP y la ejecución completa del flujo con datos
+ERA5. Durante estas pruebas se verificó que el complemento podía conectarse a Copernicus,
+descargar archivos de radiación, procesarlos, generar las capas ráster derivadas,
+vectorizar los resultados y reportar el número de polígonos aptos identificados. Esta
+validación operativa permitió comprobar no solo el funcionamiento interno del código,
+sino también la usabilidad del flujo desde la perspectiva de un usuario final.
+
+Desde el punto de vista de instalación, se identificó que el flujo con GHI manual
+mantiene un grado alto de independencia, mientras que el flujo ERA5 requiere pasos
+adicionales. Por tanto, la documentación del complemento debe distinguir claramente entre
+dependencias obligatorias y dependencias opcionales. QGIS 3.28 o superior constituye el
+requisito principal para ejecutar el complemento. En cambio, `cdsapi`, la cuenta
+Copernicus, las licencias aceptadas y el archivo `.cdsapirc` son requisitos específicos
+para la descarga directa de ERA5. Esta diferenciación evita que el usuario interprete la
+dependencia ERA5 como una condición necesaria para todos los modos de uso del complemento.
+
+Para efectos de publicación, el complemento fue preparado bajo criterios compatibles con
+el repositorio oficial de complementos de QGIS: estructura de paquete, archivo de
+metadatos, licencia abierta, icono, punto de carga mediante `classFactory`,
+documentación funcional y separación de datos de demostración respecto de la carpeta
+instalable. Esta última condición es especialmente importante, ya que los datos de
+prueba, manuales extensos o archivos pesados no deben incorporarse dentro del paquete
+instalable, sino mantenerse en repositorios o carpetas externas de documentación.
+
+La publicación en el repositorio de QGIS representa un paso relevante en términos de
+ciencia abierta. Permite que la herramienta sea visible para otros usuarios, facilita su
+instalación desde el administrador de complementos y abre la posibilidad de revisión por
+parte de la comunidad. Sin embargo, mientras el complemento se encuentre en proceso de
+validación por el comité de QGIS, se debe indicar expresamente que está cargado o
+sometido a revisión, evitando afirmar que ya se encuentra públicamente disponible si aún
+no ha sido aprobado.
+
+Como recomendación final para garantizar reproducibilidad, se sugiere mantener un
+conjunto mínimo de datos de demostración por fuera del paquete instalable, documentar una
+ejecución de referencia con sus parámetros, conservar ejemplos de salida y registrar la
+versión del complemento en los reportes. Con ello, futuras modificaciones del código
+podrán compararse contra una ejecución base y se podrá verificar que los cambios no
+alteren de manera no controlada los resultados del modelo.
 
 ::: {.callout-important}
 ## Calidad y seguridad para el repositorio oficial
-El complemento se publicó en plugins.qgis.org, cuyo repositorio ejecuta un escáner
+El complemento fue cargado en `plugins.qgis.org`, cuyo repositorio ejecuta un escáner
 automático (Bandit, detect-secrets y flake8) que bloquea cualquier hallazgo crítico de
 seguridad. El paquete se depuró hasta superar ese control sin hallazgos críticos, con
 permisos de archivo normalizados y sin secretos ni rutas temporales inseguras, de modo
-que el código publicado queda auditable, en coherencia con la filosofía Open Science. La versión publicada se
-encuentra en proceso de validación por el comité de complementos de QGIS.
+que el código sometido a revisión queda auditable, en coherencia con la filosofía Open
+Science. La versión cargada se encuentra en proceso de validación por el comité de
+complementos de QGIS.
 :::
 
-La @fig-plugin-publicado evidencia el complemento ya cargado en el repositorio oficial de
+La @fig-plugin-publicado evidencia el complemento cargado en el repositorio oficial de
 QGIS, con el identificador de complemento 5402. El portal indica que la versión aún no es
 pública, a la espera de la validación del comité.
 
@@ -665,23 +728,187 @@ asegura ponderaciones defendibles con independencia del esquema que el usuario e
 
 # Conclusiones {#sec-conclusiones}
 
-El proyecto sustituye los análisis booleanos clásicos por un modelo multicriterio AHP cuya
-consistencia se verifica con la Relación de Consistencia, lo que reduce la arbitrariedad al
-ponderar los criterios. El producto de ese modelo es el complemento `solar_site_suitability`,
-que convierte un procedimiento SIG manual en una herramienta reproducible, con arquitectura
-modular, pruebas, dataset de ejemplo e icono propio. El complemento se publicó en el
-repositorio oficial de QGIS bajo licencia GPL-3.0 y está en proceso de validación.
+El proyecto permitió sustituir los análisis booleanos clásicos de aptitud espacial por un
+modelo multicriterio basado en AHP, en el cual la ponderación de los criterios se realiza
+de forma explícita, trazable y verificable mediante la Relación de Consistencia. Esta
+condición reduce la arbitrariedad del proceso de decisión, ya que obliga a que las
+comparaciones entre radiación solar, pendiente y orientación del terreno sean coherentes
+antes de ejecutar el modelo. En consecuencia, la herramienta desarrollada no solo
+automatiza una cadena de geoprocesamiento, sino que incorpora un mecanismo formal de
+control sobre la calidad lógica de las decisiones del usuario.
 
-La reimplementación en PyQGIS y qgis:processing, con el flujo ERA5 y su corrección de
-georreferenciado, la cobertura vectorial y el selector de hemisferio, permite aplicar el
-modelo en cualquier territorio sin abandonar el enfoque AHP. La ejecución sobre Concordia
-(Antioquia), con radiación ERA5 y exclusión del casco urbano, recorrió el flujo completo y
-entregó 15 polígonos óptimos (6.776 ha) junto con el registro reproducible de todos los
-productos, lo que confirma el funcionamiento de la herramienta de principio a fin.
+El principal resultado del trabajo es el complemento `solar_site_suitability`,
+desarrollado para QGIS 3.x mediante PyQGIS y `qgis:processing`. Este complemento
+transforma un procedimiento SIG que normalmente se realizaría de forma manual,
+repetitiva y propensa a errores en una herramienta reproducible, parametrizable y
+reutilizable. Su arquitectura modular, la separación entre interfaz, validación, cálculo
+AHP, procesamiento ráster/vectorial, integración ERA5 y generación de reportes facilita
+el mantenimiento del código, la incorporación de mejoras futuras y la auditoría técnica
+del flujo implementado.
+
+La herramienta demostró ser transferible a diferentes territorios, dado que no depende de
+un conjunto de datos regional fijo. El usuario puede trabajar con cualquier área de
+estudio que disponga de un DEM, una fuente de radiación solar, ya sea un ráster GHI
+propio o datos ERA5 SSRD descargados desde Copernicus, y una capa de cobertura o
+restricciones. Esta generalidad se refuerza con el selector de hemisferio, que ajusta la
+orientación favorable de las laderas según la posición del área de estudio respecto al
+ecuador, permitiendo aplicar el modelo tanto en el hemisferio norte como en el
+hemisferio sur.
+
+La integración con ERA5 constituye uno de los aportes más relevantes del complemento, ya
+que permite descargar información de radiación solar directamente desde Copernicus,
+delimitar la solicitud al área de interés calculada a partir del DEM y generar un flujo
+automatizado de conversión y georreferenciación de los datos climáticos. No obstante,
+este componente también introduce una dependencia operativa que debe documentarse
+claramente: para usar ERA5 se requiere una cuenta activa en Copernicus, aceptación de
+licencias, configuración del archivo `.cdsapirc` e instalación de `cdsapi` en el entorno
+Python de QGIS. Por ello, la opción de ingreso manual de GHI resulta fundamental, pues
+mantiene la funcionalidad del complemento aun cuando el usuario no disponga de conexión,
+credenciales o acceso directo a ERA5.
+
+La ejecución de demostración en Concordia, Antioquia, permitió verificar el
+funcionamiento completo del flujo: selección del DEM, cálculo del área de descarga ERA5,
+procesamiento de radiación solar, derivación de pendiente y orientación, aplicación de
+máscaras de exclusión, ponderación AHP, umbralización de aptitud, vectorización y
+filtrado por área mínima. El resultado final fue la identificación de 15 polígonos
+óptimos, con un área total viable de 6,776 ha, excluyendo el casco urbano y generando
+además los archivos intermedios, capas resultado y reportes que permiten reproducir el
+análisis. Este resultado confirma que el complemento opera de principio a fin y que
+produce salidas útiles para ejercicios de prefactibilidad espacial.
+
+El modelo debe interpretarse como una herramienta de soporte a la decisión y no como un
+sustituto de los estudios técnicos definitivos. Los polígonos identificados representan
+áreas espacialmente favorables según los criterios configurados, pero la selección final
+de un sitio para un parque solar debe complementarse con análisis de propiedad predial,
+acceso vial, conexión eléctrica, restricciones ambientales, amenaza geotécnica, riesgo de
+inundación, condiciones constructivas, servidumbres, costos de implementación y
+verificación en campo. En este sentido, el complemento entrega una primera aproximación
+técnica que permite reducir el universo de búsqueda y orientar estudios posteriores de
+mayor detalle.
+
+Las pruebas realizadas también evidenciaron que la calidad de los resultados depende de
+la resolución y calidad de los insumos. DEM de baja resolución o áreas de análisis
+demasiado extensas pueden generar resultados fragmentados o polígonos excesivamente
+dispersos, mientras que DEM de mayor resolución permiten obtener límites más definidos y
+útiles para la interpretación espacial. De igual forma, la resolución espacial de ERA5
+puede ser más gruesa que la del DEM, por lo que en áreas pequeñas la variabilidad de
+radiación puede ser limitada y el resultado dependerá en mayor medida de la pendiente, la
+orientación y las restricciones aplicadas.
+
+Finalmente, el complemento materializa un aporte práctico al enfoque de ciencia abierta
+aplicado a la planificación energética. Su desarrollo bajo software libre, su licencia
+abierta, su estructura reproducible, la generación de reportes y su preparación para
+publicación en el repositorio oficial de complementos de QGIS permiten que otros usuarios
+puedan instalarlo, auditarlo, modificarlo y aplicarlo a nuevos contextos.
+
+# Limitaciones y trabajo futuro {#sec-limitaciones}
+
+Aunque el complemento desarrollado constituye una herramienta funcional para la
+identificación preliminar de zonas aptas para parques solares fotovoltaicos, sus
+resultados deben interpretarse dentro del alcance propio de un análisis de
+prefactibilidad espacial. El modelo permite reducir el universo de búsqueda y priorizar
+áreas con mejores condiciones topográficas, solares y de cobertura del suelo; sin
+embargo, no reemplaza los estudios técnicos, jurídicos, ambientales, prediales,
+eléctricos y constructivos requeridos para la selección definitiva de un sitio de
+implantación.
+
+Una primera limitación corresponde a la calidad y resolución de los datos de entrada. La
+precisión de los polígonos viables depende directamente de la resolución del DEM, de la
+calidad de la capa de cobertura del suelo y de la fuente de radiación solar empleada. En
+pruebas realizadas con DEM de resolución media, como productos de 12,5 m, los resultados
+tienden a presentar bordes más pixelados y una mayor fragmentación espacial. En cambio,
+DEM de mayor resolución permiten obtener geometrías más definidas y útiles para análisis
+locales. Por tanto, la escala del estudio debe ser coherente con la resolución de los
+insumos utilizados.
+
+Una segunda limitación está asociada a la resolución espacial de ERA5. Aunque ERA5 ofrece
+una fuente climática global, consistente y reproducible, su resolución puede ser
+considerablemente más gruesa que la del DEM o que las unidades prediales que se desean
+analizar. En áreas de estudio pequeñas, la radiación solar puede presentar poca
+variabilidad espacial, por lo que el resultado final puede quedar dominado por la
+pendiente, la orientación y las restricciones de cobertura. En estos casos, ERA5 es útil
+como insumo climático general, pero para diseños detallados podría ser conveniente
+contrastar los resultados con fuentes de radiación de mayor resolución o con datos
+locales medidos.
+
+Una tercera limitación se relaciona con la dependencia operativa del flujo ERA5. Para
+utilizar esta funcionalidad se requiere conexión a internet, cuenta activa en Copernicus,
+licencias aceptadas, archivo `.cdsapirc` correctamente configurado e instalación de
+`cdsapi` en el entorno Python de QGIS. Aunque estos requisitos son manejables, pueden
+representar una barrera para usuarios no especializados. Por esta razón, el complemento
+conserva la opción de ingresar manualmente un raster GHI externo, lo cual garantiza que
+el modelo pueda ejecutarse incluso cuando no se disponga de acceso directo a ERA5.
+
+Otra limitación importante es la simplificación de los criterios de análisis. El modelo
+actual considera radiación solar, pendiente, orientación, cobertura del suelo,
+restricciones espaciales y área mínima continua. Estos criterios son adecuados para una
+primera aproximación geomática, pero no incorporan todavía variables clave para la toma
+de decisión final, como distancia a redes eléctricas, distancia a vías, disponibilidad
+predial, costo de adquisición del suelo, cercanía a centros de consumo, restricciones
+normativas, servidumbres, amenaza por inundación, amenaza por movimientos en masa,
+estabilidad geotécnica, restricciones arqueológicas o condiciones de seguridad.
+
+El método AHP también introduce una limitación inherente: los pesos dependen del juicio
+del usuario. Aunque la Relación de Consistencia permite verificar que las comparaciones
+pareadas sean lógicamente coherentes, no garantiza que los pesos seleccionados sean los
+únicos posibles ni los más adecuados para todos los contextos. Diferentes usuarios,
+instituciones o proyectos pueden asignar prioridades distintas a la radiación, la
+pendiente o la orientación. Por ello, los resultados deben analizarse como escenarios de
+decisión y no como una verdad espacial única.
+
+Adicionalmente, el modelo no realiza todavía una validación energética detallada. La
+aptitud espacial obtenida no equivale a una estimación definitiva de producción
+fotovoltaica. Para avanzar hacia una etapa de diseño, los polígonos seleccionados
+deberían evaluarse con herramientas especializadas de simulación energética,
+considerando inclinación real de paneles, separación entre filas, pérdidas por sombreado,
+temperatura, eficiencia de módulos, inversores, disponibilidad de red, curvas de demanda
+y condiciones de operación.
+
+Como trabajo futuro, se recomienda incorporar un módulo de análisis de sensibilidad de
+pesos AHP. Este módulo permitiría ejecutar varios escenarios modificando la importancia
+relativa de los criterios y comparar la estabilidad espacial de los polígonos
+seleccionados. De esta forma, se podría identificar si una zona permanece como apta bajo
+múltiples configuraciones o si su selección depende fuertemente de una ponderación
+particular.
+
+También se recomienda integrar nuevos criterios espaciales, especialmente distancia a
+redes eléctricas, distancia a vías, cercanía a centros poblados, restricciones
+ambientales oficiales, amenazas naturales y disponibilidad predial. La inclusión de estos
+factores permitiría pasar de un modelo principalmente físico-topográfico a un modelo de
+prefactibilidad más integral, orientado a la toma de decisiones reales en planificación
+energética.
+
+Otra línea de mejora consiste en fortalecer la gestión de datos de radiación solar. El
+complemento podría permitir la comparación entre diferentes fuentes de GHI, como ERA5,
+Global Solar Atlas, productos satelitales de mayor resolución o mediciones locales. Esta
+comparación ayudaría a evaluar la incertidumbre climática y a seleccionar la fuente más
+adecuada según la escala del proyecto.
+
+Desde el punto de vista computacional, se recomienda optimizar el manejo de áreas
+extensas y periodos largos de ERA5. Para ello podrían implementarse mecanismos de caché,
+reutilización de descargas previas, control de archivos temporales, ejecución por lotes y
+mensajes de progreso más detallados. Estas mejoras facilitarían el uso del complemento en
+estudios regionales o multianuales.
+
+En términos de usabilidad, se recomienda fortalecer la documentación para usuarios no
+expertos. Esto incluye una guía paso a paso para configurar Copernicus, instalar
+`cdsapi`, crear el archivo `.cdsapirc`, seleccionar adecuadamente los parámetros del
+modelo, interpretar el Consistency Ratio del AHP y comprender el significado de las capas
+de salida. También sería útil incluir un conjunto de datos de demostración liviano,
+alojado por fuera del paquete instalable, que permita replicar una ejecución básica del
+complemento.
+
+Finalmente, se recomienda validar el complemento en distintos contextos geográficos y
+climáticos. La aplicación en regiones de montaña, zonas planas, áreas rurales aisladas,
+territorios insulares y países de ambos hemisferios permitiría evaluar la robustez del
+selector de hemisferio, la sensibilidad de los umbrales topográficos y la capacidad del
+modelo para adaptarse a condiciones territoriales diversas. Esta validación ampliaría el
+alcance científico y práctico de la herramienta, consolidándola como un instrumento
+abierto de apoyo a la planificación solar fotovoltaica.
 
 {{< pagebreak >}}
 
-# Referencias {#sec-referencias}
+# Referencias {#sec-referencias .unnumbered}
 
 ::: {#refs}
 :::
