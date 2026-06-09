@@ -681,4 +681,7 @@ productos, lo que confirma el funcionamiento de la herramienta de principio a fi
 
 {{< pagebreak >}}
 
-# Referencias {#sec-refere
+# Referencias {#sec-referencias}
+
+::: {#refs}
+:::
